@@ -1,0 +1,71 @@
+[gd_scene load_steps=6 format=3 uid="uid://cc2upwggqa5h0"]
+
+[ext_resource type="Script" path="res://Main.gd" id="1_iwyho"]
+[ext_resource type="PackedScene" uid="uid://c3tx2j2otdt5o" path="res://Bridge.tscn" id="2_e6ult"]
+[ext_resource type="Script" path="res://FPSLabel.gd" id="3_5wwou"]
+[ext_resource type="Script" path="res://PhysLabel.gd" id="3_myv6v"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_npbjt"]
+size = Vector3(40, 2, 40)
+
+[node name="Main" type="Node"]
+script = ExtResource("1_iwyho")
+
+[node name="CameraPivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 3.91, 0)
+
+[node name="Camera" type="Camera3D" parent="CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 24)
+fov = 57.0
+far = 400.0
+
+[node name="LightPivot" type="Node3D" parent="."]
+transform = Transform3D(0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, -0.75, 0.433013, 0, 0, 0)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="LightPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 30)
+shadow_enabled = true
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+visible = false
+mesh = SubResource("BoxMesh_npbjt")
+
+[node name="Bridge" parent="." instance=ExtResource("2_e6ult")]
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FPSLabel" type="Label" parent="UI"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -94.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 47.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 16
+text = "144 fps"
+horizontal_alignment = 2
+script = ExtResource("3_5wwou")
+
+[node name="PhysLabel" type="Label" parent="UI"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 99.0
+offset_bottom = 121.0
+theme_override_font_sizes/font_size = 16
+text = "dummy
+dummy
+dummy"
+script = ExtResource("3_myv6v")
+
+[connection signal="simspeed_changed" from="Bridge" to="UI/PhysLabel" method="_on_bridge_simspeed_changed"]
