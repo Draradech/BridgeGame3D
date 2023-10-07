@@ -3,12 +3,12 @@ extends Node
 signal simspeed_changed
 
 var beam_mass_per_m = 7.0 # kg/m
-var beam_stiffness = 3.0e6 # N/m * m
-var beam_damping = 2.0e3 # N/(m/s) * m
+var beam_stiffness = 20.0e6 # N/m * m
+var beam_damping = 15.0e3 # N/(m/s) * m
 var node_mass = 10.0 # kg
 var gravity = 9.81 # m/s^2
 var damping = 0.99 # velocity left after 1s
-var physics_fps = 600
+var physics_fps = 1000
 var min_render_fps = 30
 var simspeed = 1.0
 
@@ -50,6 +50,9 @@ var node_positions: Array[Vector3] = [
 	Vector3(0.5, 7, 0),
 	Vector3(0.5, 6, 0),
 	Vector3(0.5, 5, 0),
+	
+	#Vector3( 10, 5, 1.5),
+	#Vector3( 10, 5, -1.5),
 ]
 
 var beam_connections = [
@@ -73,6 +76,7 @@ var beam_connections = [
 	
 	[18, 19], [19, 20],
 	[21, 22], [22, 23], [23, 24], [24, 25], [25, 26], [26, 27], [27, 28], [28, 29], [29, 30], [30, 31],
+	#[32, 9], [33, 4],
 ]
 
 var nodes: Array[PhysNode]
@@ -97,13 +101,6 @@ func _ready():
 									beam_mass_per_m,
 									beam_stiffness,
 									beam_damping))
-	update_masses()
-	#for i in range(42,52):
-		#beams[i].stiffness *= 5
-		#beams[i].damping *= 5
-	nodes[14].mass += 14
-	nodes[20].mass += 3000
-	nodes[31].mass += 3000
 	nodes[0].fixed = true
 	#nodes[4].fixed = true
 	nodes[5].fixed = true
@@ -111,6 +108,9 @@ func _ready():
 	nodes[10].fixed = true
 	nodes[18].fixed = true
 	nodes[21].fixed = true
+	#nodes[32].fixed = true
+	#nodes[33].fixed = true
+	update_masses()
 
 func _process(_delta):
 	for i in range(nodes.size()):
@@ -123,54 +123,59 @@ func _process(_delta):
 	for i in range(beams.size()):
 		var b = beams[i]
 		var t = Transform3D()
-		var ab = b.nodeB.position - b.nodeA.position
+		var ab = b.node_b.position - b.node_a.position
 		t = t.looking_at(ab, Vector3(2, 3, 4))
 		t = t.rotated_local(Vector3.RIGHT, -PI / 2)
 		t = t.translated_local(Vector3(0, b.length/2, 0))
 		t = t.scaled_local(Vector3(1, b.length, 1))
-		t = t.translated(b.nodeA.position)
+		t = t.translated(b.node_a.position)
 		$MultiMeshBeams.multimesh.set_instance_transform(i, t)
 		$MultiMeshBeams.multimesh.set_instance_color(i, Color.from_hsv(clamp(0.33 - 0.33 * b.force / 30e3, 0, 0.66), 1.0, 1.0))
 	$MultiMeshBeams.multimesh.set_visible_instance_count(beams.size())
 
 func _physics_process(_delta):
-	update_forces()
-	update_speeds(1.0/physics_fps)
-	update_positions(1.0/physics_fps)
+	var local_delta = 1.0/physics_fps
+	var velo_factor = pow(damping, local_delta)
+	
+	for rki in range(4):
+		var dt = (0.5 if rki != 3 else 1.0) * local_delta
+		for n in nodes:
+			n.rk4[rki].p = n.position
+			n.rk4[rki].v = n.velocity
+			if rki != 0 and not n.fixed:
+					n.rk4[rki].p += dt * n.rk4[rki - 1].v
+					n.rk4[rki].v += dt * n.rk4[rki - 1].a
+			n.rk4[rki].f = Vector3.DOWN * n.mass * gravity
+		for b in beams:
+			b.update_forces(rki)
+		for n in nodes:
+			n.rk4[rki].a = n.rk4[rki].f / n.mass
+	
+	# apply
+	for n in nodes:
+		n.force = (n.rk4[0].f + 2 * n.rk4[1].f + 2 * n.rk4[2].f + n.rk4[3].f) / 6
+		if not n.fixed:
+			n.position += local_delta * (n.rk4[0].v + 2 * n.rk4[1].v + 2 * n.rk4[2].v + n.rk4[3].v) / 6
+			n.velocity += local_delta * (n.rk4[0].a + 2 * n.rk4[1].a + 2 * n.rk4[2].a + n.rk4[3].a) / 6
+			n.velocity *= velo_factor
+	for b in beams:
+		b.apply_step()
 
 func update_masses():
 	for n in nodes:
 		n.mass = node_mass
 	for b in beams:
-		b.nodeA.mass += b.mass / 2
-		b.nodeB.mass += b.mass / 2
-
-func update_positions(delta):
-	for n in nodes:
-		if not n.fixed:
-			n.position += n.velocity * delta + n.acc * delta * delta * 0.5
-			#if n.position.y < 0.1:
-			#	n.position.y = 0.1
-			#	n.velocity.y = 0
-
-func update_forces():
-	for n in nodes:
-		n.force = Vector3.DOWN * n.mass * gravity
-	for b in beams:
-		b.update_forces()
-
-func update_speeds(delta):
-	var velo_factor = pow(damping, delta)
-	for n in nodes:
-		if not n.fixed:
-			var new_acc = n.force / n.mass
-			n.velocity += (n.acc + new_acc) * delta * 0.5
-			n.velocity *= velo_factor
-			n.acc = new_acc
+		b.node_a.mass += b.mass / 2
+		b.node_b.mass += b.mass / 2
+	nodes[14].mass += 14
+	nodes[20].mass += 2000
+	nodes[31].mass += 2000
 
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_down"):
 		beams.remove_at(25)
+	if event.is_action_pressed("ui_up"):
+		nodes[9].mass += 100
 	if event.is_action_pressed("ui_right"):
 		if simspeed * 2 <= 8:
 			simspeed *= 2
