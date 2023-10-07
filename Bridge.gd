@@ -3,12 +3,12 @@ extends Node
 signal simspeed_changed
 
 var beam_mass_per_m = 7.0 # kg/m
-var beam_stiffness = 20.0e6 # N/m * m
-var beam_damping = 15.0e3 # N/(m/s) * m
+var beam_stiffness = 10.0e6 # N/m * m
+var beam_damping = 20.0e3 # N/(m/s) * m
 var node_mass = 10.0 # kg
 var gravity = 9.81 # m/s^2
 var damping = 0.99 # velocity left after 1s
-var physics_fps = 1000
+var physics_fps = 4000
 var min_render_fps = 30
 var simspeed = 1.0
 
@@ -90,8 +90,13 @@ func update_simspeed():
 
 func _ready():
 	update_simspeed()
+	set_scene()
+
+func set_scene():
 	$MultiMeshBeams.multimesh.instance_count = beam_connections.size()
 	$MultiMeshNodes.multimesh.instance_count = node_positions.size()
+	nodes.clear()
+	beams.clear()
 	for i in range(node_positions.size()):
 		nodes.append(PhysNode.new(node_positions[i], false))
 	for i in range(beam_connections.size()):
@@ -116,6 +121,7 @@ func _process(_delta):
 	for i in range(nodes.size()):
 		var n = nodes[i]
 		var t = Transform3D()
+		t = t.scaled_local(log(n.mass) * Vector3.ONE * 0.43)
 		t = t.translated(n.position)
 		$MultiMeshNodes.multimesh.set_instance_transform(i, t)
 		$MultiMeshNodes.multimesh.set_instance_color(i, Color.RED if n.fixed else Color.ORANGE if n.mass > 2000 else Color.WHITE)
@@ -127,7 +133,7 @@ func _process(_delta):
 		t = t.looking_at(ab, Vector3(2, 3, 4))
 		t = t.rotated_local(Vector3.RIGHT, -PI / 2)
 		t = t.translated_local(Vector3(0, b.length/2, 0))
-		t = t.scaled_local(Vector3(1, b.length, 1))
+		t = t.scaled_local(Vector3(1.5, b.length, 1.5))
 		t = t.translated(b.node_a.position)
 		$MultiMeshBeams.multimesh.set_instance_transform(i, t)
 		$MultiMeshBeams.multimesh.set_instance_color(i, Color.from_hsv(clamp(0.33 - 0.33 * b.force / 30e3, 0, 0.66), 1.0, 1.0))
@@ -136,30 +142,16 @@ func _process(_delta):
 func _physics_process(_delta):
 	var local_delta = 1.0/physics_fps
 	var velo_factor = pow(damping, local_delta)
-	
-	for rki in range(4):
-		var dt = (0.5 if rki != 3 else 1.0) * local_delta
-		for n in nodes:
-			n.rk4[rki].p = n.position
-			n.rk4[rki].v = n.velocity
-			if rki != 0 and not n.fixed:
-					n.rk4[rki].p += dt * n.rk4[rki - 1].v
-					n.rk4[rki].v += dt * n.rk4[rki - 1].a
-			n.rk4[rki].f = Vector3.DOWN * n.mass * gravity
-		for b in beams:
-			b.update_forces(rki)
-		for n in nodes:
-			n.rk4[rki].a = n.rk4[rki].f / n.mass
-	
-	# apply
 	for n in nodes:
-		n.force = (n.rk4[0].f + 2 * n.rk4[1].f + 2 * n.rk4[2].f + n.rk4[3].f) / 6
-		if not n.fixed:
-			n.position += local_delta * (n.rk4[0].v + 2 * n.rk4[1].v + 2 * n.rk4[2].v + n.rk4[3].v) / 6
-			n.velocity += local_delta * (n.rk4[0].a + 2 * n.rk4[1].a + 2 * n.rk4[2].a + n.rk4[3].a) / 6
-			n.velocity *= velo_factor
+		n.force = Vector3.DOWN * n.mass * gravity
 	for b in beams:
-		b.apply_step()
+		b.update_forces()
+	for n in nodes:
+		if not n.fixed:
+			n.acc = n.force / n.mass
+			n.velocity += local_delta * n.acc
+			n.velocity *= velo_factor
+			n.position += local_delta * n.velocity
 
 func update_masses():
 	for n in nodes:
@@ -167,7 +159,7 @@ func update_masses():
 	for b in beams:
 		b.node_a.mass += b.mass / 2
 		b.node_b.mass += b.mass / 2
-	nodes[14].mass += 14
+	nodes[19].mass += 14
 	nodes[20].mass += 2000
 	nodes[31].mass += 2000
 
@@ -184,3 +176,8 @@ func _unhandled_input(event):
 		if simspeed / 2 >= 1.0 / 16:
 			simspeed /= 2
 			update_simspeed()
+	if event.is_action_pressed("ui_home"):
+		set_scene()
+	if event.is_action_pressed("ui_end"):
+		nodes.clear()
+		beams.clear()
