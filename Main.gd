@@ -66,3 +66,5 @@ func _unhandled_key_input(event):
 		set_scene(AngeTruss4.bridge_def)
 	if event.keycode == KEY_6:
 		set_scene(AngeTruss5.bridge_def)
+	if event.keycode == KEY_7:
+		set_scene(PerfTest.bridge_def)

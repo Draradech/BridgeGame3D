@@ -1,6 +1,4 @@
-extends RefCounted
-
-class_name BridgeDefinition
+class_name BridgeDefinition extends RefCounted
 
 var nodes
 var beams

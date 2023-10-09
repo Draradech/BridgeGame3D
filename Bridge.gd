@@ -1,6 +1,4 @@
-extends RefCounted
-
-class_name Bridge
+class_name Bridge extends RefCounted
 
 var beam_mass_per_m = 7.0 # kg/m
 var beam_stiffness = 10.0e6 # N/m * m

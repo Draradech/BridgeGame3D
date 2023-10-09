@@ -1,5 +1,4 @@
-class_name Playground
-extends Object
+class_name Playground extends Object
 
 static var bridge_def = BridgeDefinition.new(
 	[

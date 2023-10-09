@@ -1,5 +1,4 @@
-class_name PhysBeam
-extends RefCounted
+class_name PhysBeam extends RefCounted
 
 # parameters
 var node_a: PhysNode

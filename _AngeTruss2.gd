@@ -1,5 +1,4 @@
-class_name AngeTruss2
-extends Object
+class_name AngeTruss2 extends Object
 
 static var bridge_def = BridgeDefinition.new(
 	[

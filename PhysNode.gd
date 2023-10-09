@@ -1,5 +1,4 @@
-class_name PhysNode
-extends RefCounted
+class_name PhysNode extends RefCounted
 
 var fixed: bool
 var add_mass: float
