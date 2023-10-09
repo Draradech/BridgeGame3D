@@ -27,7 +27,7 @@ static var bridge_def = BridgeDefinition.new(
 		# 18
 		[Vector3(-0.5, 15,    0),  true,    0],
 		[Vector3(-0.5, 10,    0), false,   14],
-		[Vector3(-0.5,  5,    0), false, 2000],
+		[Vector3(-0.5,  5,    0.0001), false, 2000],
 		# 21
 		[Vector3( 0.5, 15,    0),  true,    0],
 		[Vector3( 0.5, 14,    0), false,    0],
@@ -39,7 +39,7 @@ static var bridge_def = BridgeDefinition.new(
 		[Vector3( 0.5,  8,    0), false,    0],
 		[Vector3( 0.5,  7,    0), false,    0],
 		[Vector3( 0.5,  6,    0), false,    0],
-		[Vector3( 0.5,  5,    0), false, 2000],
+		[Vector3( 0.5,  5,    0.0001), false, 2000],
 	],
 	[
 		[0, 1], [0, 10], [10, 1],
