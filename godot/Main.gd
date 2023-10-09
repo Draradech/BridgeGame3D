@@ -13,7 +13,8 @@ func _ready():
 	set_scene(Playground.bridge_def)
 	
 func _process(_delta):
-	$UI/LabelFPS.text = "%d fps" % Engine.get_frames_per_second()
+	$UI/LabelFPS.text = "%d iter/s\n%d fps" % \
+		[min(Engine.get_frames_per_second() * Engine.max_physics_steps_per_frame, Engine.physics_ticks_per_second) * multistep, Engine.get_frames_per_second()]
 	bridge.update_mesh($MultiMeshNodes.multimesh, $MultiMeshBeams.multimesh)
 
 func _physics_process(_delta):
@@ -61,16 +62,18 @@ func _unhandled_key_input(event):
 		KEY_0:
 			set_scene(BridgeDefinition.new())
 		KEY_1:
-			set_scene(Playground.bridge_def)
-		KEY_2:
 			set_scene(AngeTruss1.bridge_def)
-		KEY_3:
+		KEY_2:
 			set_scene(AngeTruss2.bridge_def)
-		KEY_4:
+		KEY_3:
 			set_scene(AngeTruss3.bridge_def)
-		KEY_5:
+		KEY_4:
 			set_scene(AngeTruss4.bridge_def)
-		KEY_6:
+		KEY_5:
 			set_scene(AngeTruss5.bridge_def)
+		KEY_6:
+			set_scene(Playground.bridge_def)
 		KEY_7:
 			set_scene(PerfTest.bridge_def)
+		KEY_8:
+			set_scene(WeightCompare.bridge_def)

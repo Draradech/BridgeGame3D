@@ -98,10 +98,24 @@ void SpringPhysics::update_forces()
         double velo_s = vdot(velo, direction);
         double spring_force = (b->target_length - b->length) * b->stiffness;
         double damp_force = velo_s * b->damping;
-        b->force = spring_force + damp_force;
-        Vec3d force_vector = vmul(direction, b->force);
-        b->node_a->force = vadd(b->node_a->force, force_vector);
-        b->node_b->force = vsub(b->node_b->force, force_vector);
+        b->force = spring_force; // + damp_force;
+        Vec3d force_vector_spring = vmul(direction, spring_force);
+        Vec3d force_vector_damp = vmul(direction, damp_force);
+        b->node_a->force = vadd(b->node_a->force, force_vector_spring);
+        b->node_b->force = vsub(b->node_b->force, force_vector_spring);
+        /*
+        if(is_spring)
+        {
+            // springs, placeholder for material support
+            b->node_a->force = vadd(b->node_a->force, force_vector_damp);
+            b->node_b->force = vsub(b->node_b->force, force_vector_damp);
+        }
+        else
+        */
+        {
+            b->node_a->force = vadd(b->node_a->force, vmul(force_vector_damp, b->node_a->mass));
+            b->node_b->force = vsub(b->node_b->force, vmul(force_vector_damp, b->node_b->mass));
+        }
     }
 }
 

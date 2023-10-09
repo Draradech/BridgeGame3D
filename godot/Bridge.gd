@@ -2,7 +2,7 @@ class_name Bridge extends RefCounted
 
 var beam_mass_per_m = 7.0 # kg/m
 var beam_stiffness = 10.0e6 # N/m * m
-var beam_damping = 20.0e3 # N/(m/s) * m
+var beam_damping = 1.0e3 # N/(m/s) / kg
 var node_mass = 10.0 # kg
 var gravity = 9.81 # m/s^2
 var velo_damping = 0.99 # velocity left after 1s
@@ -22,6 +22,7 @@ func _init(bridge_def: BridgeDefinition):
 		physics.addBeam(	bridge_def.beams[i][0],
 							bridge_def.beams[i][1], 
 							beam_mass_per_m,
+							#0.1e6 if i == 25 else beam_stiffness, # spring prototype
 							beam_stiffness,
 							beam_damping)
 	delete_index = bridge_def.delete_index
