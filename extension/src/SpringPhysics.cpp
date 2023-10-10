@@ -98,20 +98,24 @@ void SpringPhysics::update_forces()
         double velo_s = vdot(velo, direction);
         double spring_force = (b->target_length - b->length) * b->stiffness;
         double damp_force = velo_s * b->damping;
+        // if(is_cable)
+        if(b->length > 10.0 && spring_force > 0.0)
+        {
+            spring_force = 0;
+            damp_force = 0;
+        }
         b->force = spring_force; // + damp_force;
         Vec3d force_vector_spring = vmul(direction, spring_force);
         Vec3d force_vector_damp = vmul(direction, damp_force);
         b->node_a->force = vadd(b->node_a->force, force_vector_spring);
         b->node_b->force = vsub(b->node_b->force, force_vector_spring);
-        /*
-        if(is_spring)
+        // if(is_spring)
+        if(b->stiffness < 1.0e6)
         {
-            // springs, placeholder for material support
             b->node_a->force = vadd(b->node_a->force, force_vector_damp);
             b->node_b->force = vsub(b->node_b->force, force_vector_damp);
         }
         else
-        */
         {
             b->node_a->force = vadd(b->node_a->force, vmul(force_vector_damp, b->node_a->mass));
             b->node_b->force = vsub(b->node_b->force, vmul(force_vector_damp, b->node_b->mass));
@@ -125,12 +129,18 @@ void SpringPhysics::integrate(double delta)
     for(int i = 0; i < nodes.size(); ++i)
     {
         PhysNode* n = &nodes[i];
-        if(!n->fixed)
+        // if(!n->fixed)
         {
             n->acc = vdiv(n->force, n->mass);
             n->velocity = vadd(n->velocity, vmul(n->acc, delta));
             n->velocity = vmul(n->velocity, velo_factor);
             n->position = vadd(n->position, vmul(n->velocity, delta));
+        }
+        // temp wheel stuff
+        if(n->fixed && n->position.y < 0.3)
+        {
+            n->velocity.y = 0;
+            n->position.y = 0.3;
         }
     }
 }

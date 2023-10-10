@@ -18,26 +18,26 @@ static var bridge_def = BridgeDefinition.new(
 		[Vector3(-7.5 - 11,  4,    0),  true,    0],
 		[Vector3(-2.5 - 11,  4,    0), false,    0],
 		[Vector3( 2.5 - 11,  4,    0), false,    0],
-		[Vector3( 7.5 - 11,  4,    0), false,  1000],
+		[Vector3( 7.5 - 11,  4,    0), false, 2000],
 
 		# 14 + 0
 		[Vector3( -10 + 11,  0, -1.5), false,    0],
 		[Vector3(  -5 + 11,  0, -1.5), false,    0],
 		[Vector3(   0 + 11,  0, -1.5), false,    0],
 		[Vector3(   5 + 11,  0, -1.5), false,    0],
-		[Vector3(  10 + 11,  0, -1.5), true,    0],
+		[Vector3(  10 + 11,  0, -1.5),  true,    0],
 		# 14 + 5
 		[Vector3( -10 + 11,  0,  1.5), false,    0],
 		[Vector3(  -5 + 11,  0,  1.5), false,    0],
 		[Vector3(   0 + 11,  0,  1.5), false,    0],
 		[Vector3(   5 + 11,  0,  1.5), false,    0],
-		[Vector3(  10 + 11,  0,  1.5), true,    0],
+		[Vector3(  10 + 11,  0,  1.5),  true,    0],
 		# 14 + 10
 		[Vector3(-7.5 + 11,  4,    0), false,    0],
 		[Vector3(-2.5 + 11,  4,    0), false,    0],
 		[Vector3( 2.5 + 11,  4,    0), false,    0],
-		[Vector3( 7.5 + 11,  4,    0), true,    0],
-		[Vector3(-7.5 + 11,  3,    0), false,    1000],
+		[Vector3( 7.5 + 11,  4,    0),  true,    0],
+		[Vector3(-7.5 + 11,  3,    0), false, 2000],
 	],
 	[
 		[0, 1], [0, 10], [10, 1],

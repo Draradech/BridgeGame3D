@@ -77,3 +77,11 @@ func _unhandled_key_input(event):
 			set_scene(PerfTest.bridge_def)
 		KEY_8:
 			set_scene(WeightCompare.bridge_def)
+		KEY_9:
+			set_scene(DangleOnEdge.bridge_def)
+		KEY_C:
+			set_scene(CableThing.bridge_def)
+		KEY_V:
+			set_scene(Car.bridge_def)
+		KEY_L:
+			print(bridge.physics.get_beam_force(24))

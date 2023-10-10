@@ -1,0 +1,19 @@
+preliminary material properties
+
+wood values based on 100 x 100 beam of C35 soft wood (0.01m^2, 400 kg/m^3, tensile strength 21 MPa, compressive strenth 24.76 MPa, E 8.7GPa)
+steel based on HEA100 beam (0.002 m^2, 8000 kg/m^3, strength 250 MPa (tensile and compressive), E 200 GPa)
+
+for numerical stability reasons, stiffness is only 20% of what it should be
+limit connections to at least 0.5 m
+
+node weighth 10 kg
+
+            weight          stiffness       force limit     max length (m)
+
+wood         4 kg/m         17.4 MN         229 kN          3
+steel       16 kg/m         80.0 MN         500 kN          5
+
+
+
+
+path planner: connect middle of roads?

@@ -1,4 +1,4 @@
-class_name PerfTest extends Object
+class_name CableThing extends Object
 
 static var bridge_def = BridgeDefinition.new(
 	[
@@ -15,10 +15,16 @@ static var bridge_def = BridgeDefinition.new(
 		[Vector3(   5,  0,  1.5), false,    0],
 		[Vector3(  10,  0,  1.5), false,    0],
 		# 10
-		[Vector3(-7.5,  4,    0),  true,    0],
+		[Vector3(-7.5,  4,    0), false,    0],
 		[Vector3(-2.5,  4,    0), false,    0],
 		[Vector3( 2.5,  4,    0), false,    0],
 		[Vector3( 7.5,  4,    0), false,    0],
+		# 14
+		[Vector3( -30,  0,    0),  true,    0],
+		[Vector3(  -7,  8,    0), false,    0],
+		[Vector3(-7.7,  8,  0.4), false,    0],
+		[Vector3(-7.7,  8, -0.4), false,    0],
+		[Vector3(-7.5, 12,    0), false,    0],
 	],
 	[
 		[0, 1], [0, 10], [10, 1],
@@ -35,6 +41,13 @@ static var bridge_def = BridgeDefinition.new(
 		
 		[0, 5], [1, 6], [2, 7], [3, 8], [4, 9],
 		[0, 6], [1, 7], [2, 8], [3, 9],
+		
+		[10, 15], [10, 16], [10, 17],
+		[15, 16], [16, 17], [17, 15], 
+		[18, 15], [18, 16], [18, 17],
+		
+		[18, 4], [18, 9], [18, 14],
+		
 	],
 	25, 9, 500
 )

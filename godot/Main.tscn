@@ -1,7 +1,10 @@
-[gd_scene load_steps=9 format=3 uid="uid://cc2upwggqa5h0"]
+[gd_scene load_steps=10 format=3 uid="uid://cc2upwggqa5h0"]
 
 [ext_resource type="Script" path="res://Main.gd" id="1_iwyho"]
 [ext_resource type="Script" path="res://Camera.gd" id="2_huj08"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_lhuwr"]
+size = Vector3(40, 2, 40)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_71dh3"]
 vertex_color_use_as_albedo = true
@@ -48,6 +51,10 @@ script = ExtResource("2_huj08")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, -0.75, 0.433013, 7.5, 26, 13)
 shadow_enabled = true
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+mesh = SubResource("BoxMesh_lhuwr")
 
 [node name="MultiMeshBeams" type="MultiMeshInstance3D" parent="."]
 multimesh = SubResource("MultiMesh_jl5hn")
