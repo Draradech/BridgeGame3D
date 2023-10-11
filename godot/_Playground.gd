@@ -1,7 +1,7 @@
 class_name Playground extends Object
 
-static var bridge_def = BridgeDefinition.new(
-	[
+static var bridge_def = BridgeDefinition.new({
+	"nodes": [
 		# 0
 		[Vector3( -10,  0, -1.5),  true,    0],
 		[Vector3(  -5,  0, -1.5), false,    0],
@@ -41,7 +41,7 @@ static var bridge_def = BridgeDefinition.new(
 		[Vector3( 0.5,  6,    0), false,    0],
 		[Vector3( 0.5,  5,    0.0001), false, 2000],
 	],
-	[
+	"beams": [
 		[0, 1], [0, 10], [10, 1],
 		[1, 2], [1, 11], [11, 2],
 		[2, 3], [2, 12], [12, 3],
@@ -62,5 +62,5 @@ static var bridge_def = BridgeDefinition.new(
 		[18, 19], [19, 20],
 		[21, 22], [22, 23], [23, 24], [24, 25], [25, 26], [26, 27], [27, 28], [28, 29], [29, 30], [30, 31],
 	],
-	25, 9, 100
-)
+	"delete_index": 25, "add_mass_index": 9, "add_mass": 500
+})

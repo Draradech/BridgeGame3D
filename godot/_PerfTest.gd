@@ -1,7 +1,7 @@
 class_name PerfTest extends Object
 
-static var bridge_def = BridgeDefinition.new(
-	[
+static var bridge_def = BridgeDefinition.new({
+	"nodes": [
 		# 0
 		[Vector3( -10,  0, -1.5),  true,    0],
 		[Vector3(  -5,  0, -1.5), false,    0],
@@ -20,7 +20,7 @@ static var bridge_def = BridgeDefinition.new(
 		[Vector3( 2.5,  4,    0), false,    0],
 		[Vector3( 7.5,  4,    0), false,    0],
 	],
-	[
+	"beams": [
 		[0, 1], [0, 10], [10, 1],
 		[1, 2], [1, 11], [11, 2],
 		[2, 3], [2, 12], [12, 3],
@@ -36,5 +36,5 @@ static var bridge_def = BridgeDefinition.new(
 		[0, 5], [1, 6], [2, 7], [3, 8], [4, 9],
 		[0, 6], [1, 7], [2, 8], [3, 9],
 	],
-	25, 9, 500
-)
+	"delete_index": 25, "add_mass_index": 9, "add_mass": 500
+})

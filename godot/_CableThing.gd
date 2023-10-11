@@ -1,7 +1,7 @@
 class_name CableThing extends Object
 
-static var bridge_def = BridgeDefinition.new(
-	[
+static var bridge_def = BridgeDefinition.new({
+	"nodes": [
 		# 0
 		[Vector3( -10,  0, -1.5),  true,    0],
 		[Vector3(  -5,  0, -1.5), false,    0],
@@ -26,7 +26,7 @@ static var bridge_def = BridgeDefinition.new(
 		[Vector3(-7.7,  8, -0.4), false,    0],
 		[Vector3(-7.5, 12,    0), false,    0],
 	],
-	[
+	"beams": [
 		[0, 1], [0, 10], [10, 1],
 		[1, 2], [1, 11], [11, 2],
 		[2, 3], [2, 12], [12, 3],
@@ -49,5 +49,4 @@ static var bridge_def = BridgeDefinition.new(
 		[18, 4], [18, 9], [18, 14],
 		
 	],
-	25, 9, 500
-)
+})

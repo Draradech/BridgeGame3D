@@ -12,8 +12,8 @@ const wood = 0
 const steel = 1
 const spring = 2
 
-static var bridge_def = BridgeDefinition.new(
-	[
+static var bridge_def = BridgeDefinition.new({
+	"nodes": [
 		# 0 - body
 		[Vector3( w/2,  bh,  l/2), false,  100],
 		[Vector3(-w/2,  bh,  l/2), false,  100],
@@ -32,8 +32,7 @@ static var bridge_def = BridgeDefinition.new(
 		[Vector3( ww/2, wh+.1, -wl/2), true,  100],
 		[Vector3(-ww/2, wh+.1, -wl/2), true,  100],
 	],
-	
-	[
+	"beams": [
 		# body
 		[0, 1, steel], [1, 3, steel], [3, 2, steel], [2, 0, steel], [0, 3, steel], [1, 2, steel],
 					   [3, 5, steel], [5, 4, steel], [4, 2, steel], [2, 5, steel], [3, 4, steel],
@@ -50,5 +49,4 @@ static var bridge_def = BridgeDefinition.new(
 		[13, 2, steel], [13, 4, steel], [13, 9, spring], 
 		[12, 3, steel], [12, 5, steel], [12, 8, spring], 
 	],
-	25, 9, 500
-)
+})

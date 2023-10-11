@@ -13,8 +13,10 @@ var add_mass: float
 
 var physics
 var def
+var road_mesh: ArrayMesh
 
-func _init(bridge_def: BridgeDefinition):
+func _init(bridge_def: BridgeDefinition, roadmesh: ArrayMesh):
+	self.road_mesh = roadmesh
 	def = bridge_def
 	physics = SpringPhysics.new()
 	physics.construct(gravity, velo_damping, bridge_def.z_fix, node_mass)
@@ -31,11 +33,58 @@ func _init(bridge_def: BridgeDefinition):
 	delete_index = bridge_def.delete_index
 	add_mass_index = bridge_def.add_mass_index
 	add_mass = bridge_def.add_mass
+	create_road_mesh()
+
+const strips = 10
+var surf
+func create_road_mesh():
+	surf = []
+	surf.resize(Mesh.ARRAY_MAX)
+	var verts = PackedVector3Array()
+	var normals = PackedVector3Array()
+	var colors = PackedColorArray()
+	var indices = PackedInt32Array()
+	verts.resize((2 * strips + 2) * def.roads.size())
+	normals.resize((2 * strips + 2) * def.roads.size())
+	colors.resize((2 * strips + 2) * def.roads.size())
+	indices.resize((2 * 3 * strips) * def.roads.size())
+	for i in range(def.roads.size()):
+		for s in range(strips):
+			indices[i * 2 * 3 * strips + 6 * s + 0] = 0 + 2 * s
+			indices[i * 2 * 3 * strips + 6 * s + 1] = 1 + 2 * s
+			indices[i * 2 * 3 * strips + 6 * s + 2] = 3 + 2 * s
+			indices[i * 2 * 3 * strips + 6 * s + 3] = 0 + 2 * s
+			indices[i * 2 * 3 * strips + 6 * s + 4] = 3 + 2 * s
+			indices[i * 2 * 3 * strips + 6 * s + 5] = 2 + 2 * s
+	surf[Mesh.ARRAY_VERTEX] = verts
+	surf[Mesh.ARRAY_NORMAL] = normals
+	surf[Mesh.ARRAY_COLOR] = colors
+	surf[Mesh.ARRAY_INDEX] = indices
 
 func sim_step(delta, batching):
 	physics.sim_step(delta, batching)
 
 func update_mesh(node_mesh, beam_mesh):
+	road_mesh.clear_surfaces()
+	for i in range(def.roads.size()):
+		var s0 = physics.get_beam_pos_a(def.roads[i][0])
+		var s1 = physics.get_beam_pos_b(def.roads[i][0])
+		var e0 = physics.get_beam_pos_a(def.roads[i][1])
+		var e1 = physics.get_beam_pos_b(def.roads[i][1])
+		var d0 = e0 - s0
+		var d1 = e1 - s1
+		for s in range(strips + 1):
+			var p0 = lerp(s0, e0, (1.0 * s / strips))
+			var p1 = lerp(s1, e1, (1.0 * s / strips))
+			var d2 = p1 - p0
+			surf[Mesh.ARRAY_VERTEX][i * (2 * strips + 2) + 2 * s + 0] = p0
+			surf[Mesh.ARRAY_VERTEX][i * (2 * strips + 2) + 2 * s + 1] = p1
+			surf[Mesh.ARRAY_NORMAL][i * (2 * strips + 2) + 2 * s + 0] = d0.cross(d2)
+			surf[Mesh.ARRAY_NORMAL][i * (2 * strips + 2) + 2 * s + 1] = d1.cross(d2)
+			surf[Mesh.ARRAY_COLOR][i * (2 * strips + 2) + 2 * s + 0] = Color.DARK_SLATE_GRAY * 0.5
+			surf[Mesh.ARRAY_COLOR][i * (2 * strips + 2) + 2 * s + 1] = Color.DARK_SLATE_GRAY * 0.5
+	if def.roads.size() > 0:
+		road_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surf)
 	for i in range(physics.get_num_nodes()):
 		var t = Transform3D()
 		t = t.scaled_local(log(physics.get_node_mass(i)) * Vector3.ONE * 0.43)

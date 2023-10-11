@@ -1,7 +1,7 @@
 class_name WeightCompare extends Object
 
-static var bridge_def = BridgeDefinition.new(
-	[
+static var bridge_def = BridgeDefinition.new({
+	"nodes": [
 		# 0
 		[Vector3( -10 - 11,  0, -1.5),  true,    0],
 		[Vector3(  -5 - 11,  0, -1.5), false,    0],
@@ -39,7 +39,7 @@ static var bridge_def = BridgeDefinition.new(
 		[Vector3( 7.5 + 11,  4,    0),  true,    0],
 		[Vector3(-7.5 + 11,  3,    0), false, 2000],
 	],
-	[
+	"beams": [
 		[0, 1], [0, 10], [10, 1],
 		[1, 2], [1, 11], [11, 2],
 		[2, 3], [2, 12], [12, 3],
@@ -70,5 +70,5 @@ static var bridge_def = BridgeDefinition.new(
 		[14 +0, 5 + 14], [14 +1, 6 + 14], [14 +2, 7 + 14], [14 +3, 8 + 14], [14 +4, 9 + 14],
 		[14 +0, 6 + 14], [14 +1, 7 + 14], [14 +2, 8 + 14], [14 +3, 9 + 14],
 	],
-	25, 9, 100
-)
+	"delete_index": 25, "add_mass_index": 9, "add_mass": 500
+})

@@ -1,7 +1,7 @@
 class_name DangleOnEdge extends Object
 
-static var bridge_def = BridgeDefinition.new(
-	[
+static var bridge_def = BridgeDefinition.new({
+	"nodes": [
 		# 0
 		[Vector3( 0,  0,  0),  false,    0],
 		[Vector3( 5,  0,  0),  false,    0],
@@ -11,12 +11,14 @@ static var bridge_def = BridgeDefinition.new(
 		[Vector3( 0,  2,  0),   true,    0],
 		[Vector3( 5,  2,  0),   true,    0],
 		[Vector3( 0,  2,  5),   true,    0],
-		[Vector3( 5, -3,  5),  false,  1000],
+		[Vector3( 5, -3,  5),  false,  10000],
 	],
-	[
+	"beams": [
 		[0, 1], [1, 2], [2, 3], [3, 0],
 		[0, 2], [1, 3],
 		[0, 4], [1, 5], [2, 6], [3, 7],
 	],
-	25, 9, 100
-)
+	"roads": [
+		[0, 2]
+	]
+})

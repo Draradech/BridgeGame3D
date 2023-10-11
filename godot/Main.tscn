@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://cc2upwggqa5h0"]
+[gd_scene load_steps=11 format=3 uid="uid://cc2upwggqa5h0"]
 
 [ext_resource type="Script" path="res://Main.gd" id="1_iwyho"]
 [ext_resource type="Script" path="res://Camera.gd" id="2_huj08"]
@@ -39,6 +39,9 @@ transform_format = 1
 use_colors = true
 mesh = SubResource("SphereMesh_qukvq")
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ghprq"]
+vertex_color_use_as_albedo = true
+
 [node name="Main" type="Node"]
 script = ExtResource("1_iwyho")
 
@@ -62,6 +65,9 @@ multimesh = SubResource("MultiMesh_jl5hn")
 
 [node name="MultiMeshNodes" type="MultiMeshInstance3D" parent="."]
 multimesh = SubResource("MultiMesh_es0pw")
+
+[node name="RoadMeshInstance" type="MeshInstance3D" parent="."]
+material_override = SubResource("StandardMaterial3D_ghprq")
 
 [node name="UI" type="Control" parent="."]
 layout_mode = 3
