@@ -5,20 +5,35 @@ var min_render_fps = 30.0
 var multistep_at_1x = 16.0
 var multistep = 16
 var bridge
+var fps = [0, 0.0, 0]
+var ips = [0, 0.0, 0]
 
 func _ready():
 	Engine.physics_ticks_per_second = (int)(physics_fps / multistep_at_1x)
 	Engine.max_physics_steps_per_frame = max(2, Engine.physics_ticks_per_second / min_render_fps)
 	update_simspeed()
-	set_scene(Playground.bridge_def)
+	set_scene(PerfTest.bridge_def)
+	fps[2] = Time.get_ticks_usec()
+	ips[2] = Time.get_ticks_usec()
 	
 func _process(_delta):
-	$UI/LabelFPS.text = "%d iter/s\n%d fps" % \
-		[min(Engine.get_frames_per_second() * Engine.max_physics_steps_per_frame, Engine.physics_ticks_per_second) * multistep, Engine.get_frames_per_second()]
+	var now = Time.get_ticks_usec()
+	fps[0] += 1
+	if now - fps[2] > 1e6:
+		fps[1] = fps[0] / ((now - fps[2]) * 1e-6)
+		fps[2] = now
+		fps[0] = 0
+	$UI/LabelFPS.text = "%.3fM iter/s\n%.1f fps" % [ips[1]*1e-6, fps[1]]
 	bridge.update_mesh($MultiMeshNodes.multimesh, $MultiMeshBeams.multimesh)
 
 func _physics_process(_delta):
 	bridge.sim_step(1.0 / physics_fps, multistep)
+	var now = Time.get_ticks_usec()
+	ips[0] += multistep
+	if now - ips[2] > 1e6:
+		ips[1] = ips[0] / ((now - ips[2]) * 1e-6)
+		ips[2] = now
+		ips[0] = 0
 
 func update_simspeed():
 	if multistep >= multistep_at_1x:
@@ -47,12 +62,12 @@ func _unhandled_key_input(event):
 				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
 		KEY_DOWN:
 			if bridge:
-				bridge.event_delete_beam()
+				bridge.event_break_beam()
 		KEY_UP:
 			if bridge:
 				bridge.event_add_mass()
 		KEY_RIGHT:
-			if multistep * 2 <= 256 * multistep_at_1x:
+			if multistep * 2 <= 1024 * multistep_at_1x:
 				multistep *= 2
 				update_simspeed()
 		KEY_LEFT:

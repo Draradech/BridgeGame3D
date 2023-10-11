@@ -2,30 +2,26 @@
 #define _SPRINGPHYSICS_H_
 
 #include <godot_cpp/classes/ref_counted.hpp>
-#include <vector>
-#include "Vec3d.h"
+#include "Vec3f.h"
 
 typedef struct
 {
-   Vec3d position;
+   Vec3f position;
+   Vec3f velocity;
+   Vec3f force;
+   float own_mass;
+   float mass;
    bool fixed;
-   Vec3d velocity;
-   Vec3d force;
-   Vec3d acc;
-   double own_mass;
-   double mass;
 } PhysNode;
 
 typedef struct
 {
    PhysNode* node_a;
    PhysNode* node_b;
-   double mass;
-   double stiffness;
-   double damping;
-   double target_length;
-   double length;
-   double force;
+   float mass;
+   float stiffness;
+   float damping;
+   float target_length;
 } PhysBeam;
 
 namespace godot
@@ -35,14 +31,18 @@ namespace godot
         GDCLASS(SpringPhysics, RefCounted);
 
         private:
-            double gravity;
-            double velo_damping;
+            float gravity;
+            float velo_damping;
+            float velo_factor;
             bool z_fix;
-            std::vector<PhysNode> nodes;
-            std::vector<PhysBeam> beams;
+            PhysNode* nodes;
+            PhysBeam* beams;
             void update_masses();
             void update_forces();
-            void integrate(double delta);
+            void integrate(float delta);
+            int num_nodes;
+            int num_beams;
+            float node_mass;
         
         protected:
             static void _bind_methods();
@@ -50,21 +50,21 @@ namespace godot
         public:
             SpringPhysics();
             ~SpringPhysics();
-            void setParameters(double gravity, double velo_damping, bool z_fix);
-            void addNode(Vector3 position, bool fixed, double own_mass);
-            void addBeam(int index_a, int index_b, double mass_per_m, double stiffness, double damping);
-            void sim_step(double delta, int batching);
-            void add_mass(int add_mass_index, double add_mass);
-            void delete_beam(int delete_index);
+            void construct(float gravity, float velo_damping, bool z_fix, float node_mass);
+            void addNode(Vector3 position, bool fixed, float own_mass);
+            void addBeam(int index_a, int index_b, float mass_per_m, float stiffness, float damping);
+            void sim_step(float delta, int batching);
+            void add_mass(int i, float add_mass);
+            void break_beam(int i);
             int get_num_nodes();
-            double get_node_mass(int i);
+            float get_node_mass(int i);
             Vector3 get_node_position(int i);
             bool get_node_fixed(int i);
             int get_num_beams();
             Vector3 get_beam_pos_a(int i);
             Vector3 get_beam_pos_b(int i);
-            double get_beam_length(int i);
-            double get_beam_force(int i);
+            float get_beam_length(int i);
+            float get_beam_force(int i);
     };
 }
 

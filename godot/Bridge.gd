@@ -17,18 +17,17 @@ var def
 func _init(bridge_def: BridgeDefinition):
 	def = bridge_def
 	physics = SpringPhysics.new()
-	physics.setParameters(gravity, velo_damping, bridge_def.z_fix)
+	physics.construct(gravity, velo_damping, bridge_def.z_fix, node_mass)
 	for i in range(bridge_def.nodes.size()):
-		physics.addNode(bridge_def.nodes[i][0], bridge_def.nodes[i][1], bridge_def.nodes[i][2] + node_mass)
+		physics.addNode(bridge_def.nodes[i][0], bridge_def.nodes[i][1], bridge_def.nodes[i][2])
 	for i in range(bridge_def.beams.size()):
 		physics.addBeam(	bridge_def.beams[i][0],
 							bridge_def.beams[i][1], 
 							beam_mass_per_m,
-							(0.03e6 if (i == 31 or i == 34 or i == 37 or i == 40) else beam_stiffness), # spring prototype
-							#beam_stiffness,
-							#beam_damping)
-							(1.5e3 if (i == 31 or i == 34 or i == 37 or i == 40) else beam_damping)
-							)
+							#(0.03e6 if (i == 31 or i == 34 or i == 37 or i == 40) else beam_stiffness), # car prototype
+							beam_stiffness,
+							beam_damping)
+							#(1.5e3 if (i == 31 or i == 34 or i == 37 or i == 40) else beam_damping)) # car prototype
 	delete_index = bridge_def.delete_index
 	add_mass_index = bridge_def.add_mass_index
 	add_mass = bridge_def.add_mass
@@ -39,8 +38,8 @@ func sim_step(delta, batching):
 func update_mesh(node_mesh, beam_mesh):
 	for i in range(physics.get_num_nodes()):
 		var t = Transform3D()
-		#t = t.scaled_local(log(physics.get_node_mass(i)) * Vector3.ONE * 0.43)
-		t = t.scaled_local(Vector3.ONE * (3.0 if def.nodes[i][1] else 0.75))
+		t = t.scaled_local(log(physics.get_node_mass(i)) * Vector3.ONE * 0.43)
+		#t = t.scaled_local(Vector3.ONE * (3.0 if def.nodes[i][1] else 0.75))
 		t = t.translated(physics.get_node_position(i))
 		node_mesh.set_instance_transform(i, t)
 		node_mesh.set_instance_color(i, Color.RED if physics.get_node_fixed(i) else Color.WHITE)
@@ -54,7 +53,7 @@ func update_mesh(node_mesh, beam_mesh):
 		t = t.scaled_local(Vector3(1.5, physics.get_beam_length(i), 1.5))
 		t = t.translated(physics.get_beam_pos_a(i))
 		beam_mesh.set_instance_transform(i, t)
-		beam_mesh.set_instance_color(i, Color.from_hsv(clamp(0.33 - 0.33 * physics.get_beam_force(i) / 16e3, 0, 0.66), 1.0, 1.0))
+		beam_mesh.set_instance_color(i, Color.from_hsv(clamp(0.33 - 0.33 * physics.get_beam_force(i) / 200e3, 0, 0.66), 1.0, 1.0))
 		#beam_mesh.set_instance_color(i, Color.from_hsv(0.0 if b.force > 0 else 0.66, clamp(abs(b.force) / 30e3, 0, 1), 1.0))
 	beam_mesh.set_visible_instance_count(physics.get_num_beams())
 
@@ -62,6 +61,7 @@ func event_add_mass():
 	if add_mass_index >= 0:
 		physics.add_mass(add_mass_index, add_mass)
 
-func event_delete_beam():
+func event_break_beam():
 	if delete_index >= 0 and delete_index < physics.get_num_beams():
-		physics.delete_beam(delete_index)
+		physics.break_beam(delete_index)
+		delete_index += 1

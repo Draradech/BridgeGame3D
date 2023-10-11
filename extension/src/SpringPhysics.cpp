@@ -1,12 +1,13 @@
 #include "SpringPhysics.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <immintrin.h>
 
 using namespace godot;
 
 void SpringPhysics::_bind_methods()
 {
-    ClassDB::bind_method(D_METHOD("setParameters", "gravity", "velo_damping", "z_fix"), &SpringPhysics::setParameters);
+    ClassDB::bind_method(D_METHOD("construct", "gravity", "velo_damping", "z_fix", "node_mass"), &SpringPhysics::construct);
     ClassDB::bind_method(D_METHOD("addNode", "position", "fixed", "own_mass"), &SpringPhysics::addNode);
     ClassDB::bind_method(D_METHOD("addBeam", "index_a", "index_b", "mass_per_m", "stiffness", "damping"), &SpringPhysics::addBeam);
     ClassDB::bind_method(D_METHOD("sim_step", "delta", "batching"), &SpringPhysics::sim_step);
@@ -19,98 +20,113 @@ void SpringPhysics::_bind_methods()
     ClassDB::bind_method(D_METHOD("get_beam_pos_b", "i"), &SpringPhysics::get_beam_pos_b);
     ClassDB::bind_method(D_METHOD("get_beam_length", "i"), &SpringPhysics::get_beam_length);
     ClassDB::bind_method(D_METHOD("get_beam_force", "i"), &SpringPhysics::get_beam_force);
-    ClassDB::bind_method(D_METHOD("add_mass", "add_mass_index", "add_mass"), &SpringPhysics::add_mass);
-    ClassDB::bind_method(D_METHOD("delete_beam", "delete_index"), &SpringPhysics::delete_beam);
+    ClassDB::bind_method(D_METHOD("add_mass", "i", "add_mass"), &SpringPhysics::add_mass);
+    ClassDB::bind_method(D_METHOD("break_beam", "i"), &SpringPhysics::break_beam);
 }
 
 SpringPhysics::SpringPhysics()
 {
+
 }
 
 SpringPhysics::~SpringPhysics()
 {
+    delete[] nodes;
+    delete[] beams;
 }
 
-void SpringPhysics::setParameters(double gravity, double velo_damping, bool z_fix)
+void SpringPhysics::construct(float gravity, float velo_damping, bool z_fix, float node_mass)
 {
     this->gravity = gravity;
     this->velo_damping = velo_damping;
     this->z_fix = z_fix;
+    this->node_mass = node_mass;
+
+    nodes = new PhysNode[200]();
+    beams = new PhysBeam[200]();
+    num_nodes = 0;
+    num_beams = 0;
 }
 
-void SpringPhysics::addNode(Vector3 position, bool fixed, double own_mass)
+void SpringPhysics::addNode(Vector3 position, bool fixed, float own_mass)
 {
-    PhysNode n;
-    n.position.x = position.x;
-    n.position.y = position.y;
-    n.position.z = position.z;
-    n.acc = V3D_ZERO;
-    n.velocity = V3D_ZERO;
-    n.fixed = fixed;
-    n.own_mass = own_mass;
-    nodes.push_back(n);
+    PhysNode* n = &nodes[num_nodes++];
+    n->position.x = position.x;
+    n->position.y = position.y;
+    n->position.z = position.z;
+    n->velocity = V3D_ZERO;
+    n->fixed = fixed;
+    n->own_mass = own_mass + node_mass;
 }
 
-void SpringPhysics::addBeam(int index_a, int index_b, double mass_per_m, double stiffness, double damping)
+void SpringPhysics::addBeam(int index_a, int index_b, float mass_per_m, float stiffness, float damping)
 {
-    PhysBeam b;
-    // TODO: these pointers are invalidated if the vector<PhysNode> needs to be reallocated. Guard against that somehow.
-    b.node_a = &nodes[index_a];
-    b.node_b = &nodes[index_b];
+    PhysBeam* b = &beams[num_beams++];
 
-    b.length = distance(b.node_a->position, b.node_b->position);
-    b.target_length = b.length;
-    b.mass = mass_per_m * b.length;
-    b.stiffness = stiffness / b.length;
-    b.damping = damping / b.length;
-    beams.push_back(b);
+    b->node_a = &nodes[index_a];
+    b->node_b = &nodes[index_b];
+
+    float length = distance(b->node_a->position, b->node_b->position);
+    b->target_length = length;
+    b->mass = mass_per_m * length;
+    b->stiffness = stiffness / length;
+    b->damping = damping / length;
+    update_masses();
+}
+
+float rsqrt(float f)
+{
+    __m128 temp = _mm_set_ss(f);
+    temp = _mm_rsqrt_ss(temp);
+    return _mm_cvtss_f32(temp);
 }
 
 void SpringPhysics::update_masses()
 {
-    for(int i = 0; i < nodes.size(); ++i)
+    for(int i = num_nodes - 1; i >= 0; --i)
     {
         PhysNode* n = &nodes[i];
         n->mass = n->own_mass;
     }
-    for(int i = 0; i < beams.size(); ++i)
+    for(int i = num_beams - 1; i >= 0; --i)
     {
         PhysBeam* b = &beams[i];
-        b->node_a->mass += b->mass / 2;
-        b->node_b->mass += b->mass / 2;
+        b->node_a->mass += b->mass * 0.5f;
+        b->node_b->mass += b->mass * 0.5f;
     }
 }
 
-void SpringPhysics::update_forces()
+_FORCE_INLINE_ void SpringPhysics::update_forces()
 {
-    for(int i = 0; i < nodes.size(); ++i)
+    for(int i = num_nodes - 1; i >= 0; --i)
     {
         PhysNode* n = &nodes[i];
         n->force = vmul(V3D_DOWN, n->mass * gravity);
     }
-    for(int i = 0; i < beams.size(); ++i)
+    for(int i = num_beams - 1; i >= 0; --i)
     {
         PhysBeam* b = &beams[i];
-        Vec3d b_to_a = vsub(b->node_a->position, b->node_b->position);
-        b->length = length(b_to_a);
-        Vec3d direction = vdiv(b_to_a, b->length);
-        Vec3d velo = vsub(b->node_b->velocity, b->node_a->velocity);
-        double velo_s = vdot(velo, direction);
-        double spring_force = (b->target_length - b->length) * b->stiffness;
-        double damp_force = velo_s * b->damping;
+        Vec3f b_to_a = vsub(b->node_a->position, b->node_b->position);
+        float lsq = vdot(b_to_a, b_to_a);
+        float rl = rsqrt(lsq);
+        float length = lsq * rl;
+        Vec3f direction = vmul(b_to_a, rl);
+        Vec3f velo = vsub(b->node_b->velocity, b->node_a->velocity);
+        float velo_s = vdot(velo, direction);
+        float spring_force = (b->target_length - length) * b->stiffness;
+        float damp_force = velo_s * b->damping;
         // if(is_cable)
-        if(b->length > 10.0 && spring_force > 0.0)
+        if(length > 10.0f && spring_force > 0.0f)
         {
-            spring_force = 0;
-            damp_force = 0;
+            spring_force = 0.0f;
+            damp_force = 0.0f;
         }
-        b->force = spring_force; // + damp_force;
-        Vec3d force_vector_spring = vmul(direction, spring_force);
-        Vec3d force_vector_damp = vmul(direction, damp_force);
+        Vec3f force_vector_spring = vmul(direction, spring_force);
+        Vec3f force_vector_damp = vmul(direction, damp_force);
         b->node_a->force = vadd(b->node_a->force, force_vector_spring);
         b->node_b->force = vsub(b->node_b->force, force_vector_spring);
         // if(is_spring)
-        if(b->stiffness < 1.0e6)
+        if(b->stiffness < 1.0e6f)
         {
             b->node_a->force = vadd(b->node_a->force, force_vector_damp);
             b->node_b->force = vsub(b->node_b->force, force_vector_damp);
@@ -123,43 +139,43 @@ void SpringPhysics::update_forces()
     }
 }
 
-void SpringPhysics::integrate(double delta)
+_FORCE_INLINE_ void SpringPhysics::integrate(float delta)
 {
-    double velo_factor = pow(velo_damping, delta);
-    for(int i = 0; i < nodes.size(); ++i)
+    for(int i = num_nodes - 1; i >= 0; --i)
     {
         PhysNode* n = &nodes[i];
-        // if(!n->fixed)
+        if(!n->fixed)
         {
-            n->acc = vdiv(n->force, n->mass);
-            n->velocity = vadd(n->velocity, vmul(n->acc, delta));
+            Vec3f acc = vdiv(n->force, n->mass);
+            n->velocity = vadd(n->velocity, vmul(acc, delta));
             n->velocity = vmul(n->velocity, velo_factor);
             n->position = vadd(n->position, vmul(n->velocity, delta));
         }
-        // temp wheel stuff
-        if(n->fixed && n->position.y < 0.3)
+        /* temp wheel stuff
+        if(n->fixed && n->position.y < 0.3f)
         {
-            n->velocity.y = 0;
-            n->position.y = 0.3;
+            n->velocity.y = 0.0f;
+            n->position.y = 0.3f;
         }
+        */
     }
 }
 
-void SpringPhysics::sim_step(double delta, int batching)
+void SpringPhysics::sim_step(float delta, int batching)
 {
+    velo_factor = pow(velo_damping, delta);
     for(int i = 0; i < batching; ++i)
     {
-        update_masses();
         update_forces();
         integrate(delta);
         if(z_fix)
         {
-            for(int i = 0; i < nodes.size(); ++i)
+            for(int i = num_nodes - 1; i >= 0; --i)
             {
                 PhysNode* n = &nodes[i];
-                n->force.z = 0;
-			    n->velocity.z = 0;
-			    n->position.z = 0;
+                n->force.z = 0.0f;
+			    n->velocity.z = 0.0f;
+			    n->position.z = 0.0f;
             }
         }
     }
@@ -167,10 +183,10 @@ void SpringPhysics::sim_step(double delta, int batching)
 
 int SpringPhysics::get_num_nodes()
 {
-    return nodes.size();
+    return num_nodes;
 }
 
-double SpringPhysics::get_node_mass(int i)
+float SpringPhysics::get_node_mass(int i)
 {
     return nodes[i].mass;
 }
@@ -187,7 +203,7 @@ bool SpringPhysics::get_node_fixed(int i)
 
 int SpringPhysics::get_num_beams()
 {
-    return beams.size();
+    return num_beams;
 }
 
 Vector3 SpringPhysics::get_beam_pos_a(int i)
@@ -200,22 +216,61 @@ Vector3 SpringPhysics::get_beam_pos_b(int i)
     return Vector3(beams[i].node_b->position.x, beams[i].node_b->position.y, beams[i].node_b->position.z);
 }
 
-double SpringPhysics::get_beam_length(int i)
+float SpringPhysics::get_beam_length(int i)
 {
-    return beams[i].length;
+    PhysBeam* b = &beams[i];
+    Vec3f b_to_a = vsub(b->node_a->position, b->node_b->position);
+    float lsq = vdot(b_to_a, b_to_a);
+    float rl = rsqrt(lsq);
+    float length = lsq * rl;
+    return length;
 }
 
-double SpringPhysics::get_beam_force(int i)
+float SpringPhysics::get_beam_force(int i)
 {
-    return beams[i].force;
+    PhysBeam* b = &beams[i];
+    Vec3f b_to_a = vsub(b->node_a->position, b->node_b->position);
+    float lsq = vdot(b_to_a, b_to_a);
+    float rl = rsqrt(lsq);
+    float length = lsq * rl;
+    float spring_force = (b->target_length - length) * b->stiffness;
+    return spring_force;
 }
 
-void SpringPhysics::add_mass(int add_mass_index, double add_mass)
+void SpringPhysics::add_mass(int i, float add_mass)
 {
-    nodes[add_mass_index].own_mass += add_mass;
+    nodes[i].own_mass += add_mass;
+    update_masses();
 }
 
-void SpringPhysics::delete_beam(int delete_index)
+void SpringPhysics::break_beam(int i)
 {
-    beams.erase(beams.begin() + delete_index);
+    PhysBeam* b1 = &beams[i];
+    PhysBeam* b2 = &beams[num_beams++];
+    PhysNode* n1a = b1->node_a;
+    PhysNode* n1b = &nodes[num_nodes++];
+    PhysNode* n2a = &nodes[num_nodes++];
+    PhysNode* n2b = b1->node_b;
+
+    n1b->position = vmul(vadd(n1a->position, n2b->position), 0.5f);
+    n1b->velocity = vmul(vadd(n1a->velocity, n2b->velocity), 0.5f);;
+    n1b->fixed = false;
+    n1b->own_mass = node_mass;
+    n2a->position = n1b->position;
+    n2a->velocity = n1b->velocity;
+    n2a->fixed = false;
+    n2a->own_mass = node_mass;
+
+    b1->node_b = n1b;
+    b1->target_length = b1->target_length * 0.5;
+    b1->mass = b1->mass * 0.5;
+
+    b2->node_a = n2a;
+    b2->node_b = n2b;
+    b2->target_length = b1->target_length;
+    b2->mass = b1->mass;
+    b2->stiffness = b1->stiffness;
+    b2->damping = b1->damping;
+
+    update_masses();
 }
