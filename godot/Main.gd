@@ -12,7 +12,7 @@ func _ready():
 	Engine.physics_ticks_per_second = (int)(physics_fps / multistep_at_1x)
 	Engine.max_physics_steps_per_frame = max(2, Engine.physics_ticks_per_second / min_render_fps)
 	update_simspeed()
-	set_scene(DangleOnEdge.bridge_def)
+	set_scene(PerfTest.bridge_def)
 	fps[2] = Time.get_ticks_usec()
 	ips[2] = Time.get_ticks_usec()
 	
@@ -46,7 +46,7 @@ func update_simspeed():
 func set_scene(bridge_def):
 	$MultiMeshNodes.multimesh.instance_count = bridge_def.nodes.size() + bridge_def.beams.size() * 2
 	$MultiMeshBeams.multimesh.instance_count = bridge_def.beams.size() * 2
-	$RoadMeshInstance.mesh = ArrayMesh.new()
+	$RoadMeshInstance.mesh = ImmediateMesh.new()
 	bridge = Bridge.new(bridge_def, $RoadMeshInstance.mesh)
 
 func _unhandled_key_input(event):

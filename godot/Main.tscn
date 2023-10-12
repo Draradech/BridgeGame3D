@@ -1,7 +1,21 @@
-[gd_scene load_steps=11 format=3 uid="uid://cc2upwggqa5h0"]
+[gd_scene load_steps=14 format=3 uid="uid://cc2upwggqa5h0"]
 
 [ext_resource type="Script" path="res://Main.gd" id="1_iwyho"]
 [ext_resource type="Script" path="res://Camera.gd" id="2_huj08"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_25fwy"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_nfjew"]
+sky_material = SubResource("ProceduralSkyMaterial_25fwy")
+
+[sub_resource type="Environment" id="Environment_3ohk6"]
+background_mode = 2
+sky = SubResource("Sky_nfjew")
+ambient_light_sky_contribution = 0.8
+tonemap_mode = 2
+glow_enabled = true
 
 [sub_resource type="BoxMesh" id="BoxMesh_lhuwr"]
 size = Vector3(40, 2, 40)
@@ -39,21 +53,30 @@ transform_format = 1
 use_colors = true
 mesh = SubResource("SphereMesh_qukvq")
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ghprq"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i52e8"]
+cull_mode = 2
 vertex_color_use_as_albedo = true
 
 [node name="Main" type="Node"]
 script = ExtResource("1_iwyho")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_3ohk6")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.939693, -0.219846, 0.262003, 0, 0.766044, 0.642788, -0.34202, -0.604023, 0.719846, 0, 0, 0)
+light_energy = 0.5
+shadow_enabled = true
+shadow_bias = 0.02
+shadow_normal_bias = 1.0
+directional_shadow_blend_splits = true
+directional_shadow_max_distance = 70.0
 
 [node name="Camera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 12, 22)
 fov = 57.0
 far = 400.0
 script = ExtResource("2_huj08")
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, -0.75, 0.433013, 7.5, 26, 13)
-shadow_enabled = true
 
 [node name="Floor" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
@@ -67,7 +90,7 @@ multimesh = SubResource("MultiMesh_jl5hn")
 multimesh = SubResource("MultiMesh_es0pw")
 
 [node name="RoadMeshInstance" type="MeshInstance3D" parent="."]
-material_override = SubResource("StandardMaterial3D_ghprq")
+material_override = SubResource("StandardMaterial3D_i52e8")
 
 [node name="UI" type="Control" parent="."]
 layout_mode = 3
