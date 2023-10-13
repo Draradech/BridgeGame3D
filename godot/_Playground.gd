@@ -27,7 +27,7 @@ static var bridge_def = BridgeDefinition.new({
 		# 18
 		[Vector3(-0.5, 15,    0),  true,    0],
 		[Vector3(-0.5, 10,    0), false,   14],
-		[Vector3(-0.5,  5,    0.0001), false, 2000],
+		[Vector3(-0.5,  5,    0), false, 15000],
 		# 21
 		[Vector3( 0.5, 15,    0),  true,    0],
 		[Vector3( 0.5, 14,    0), false,    0],
@@ -39,7 +39,7 @@ static var bridge_def = BridgeDefinition.new({
 		[Vector3( 0.5,  8,    0), false,    0],
 		[Vector3( 0.5,  7,    0), false,    0],
 		[Vector3( 0.5,  6,    0), false,    0],
-		[Vector3( 0.5,  5,    0.0001), false, 2000],
+		[Vector3( 0.5,  5,    0), false, 15000],
 	],
 	"beams": [
 		[0, 1], [0, 10], [10, 1],
@@ -63,5 +63,8 @@ static var bridge_def = BridgeDefinition.new({
 		[21, 22], [22, 23], [23, 24], [24, 25], [25, 26], [26, 27], [27, 28], [28, 29], [29, 30], [30, 31],
 	],
 	"roads": [ [31, 32], [32, 33], [33, 34], [34, 35]],
-	"delete_index": 25, "add_mass_index": 9, "add_mass": 500
+	"delete_index": 25, "add_mass_index": 9, "add_mass": 500,
+	"car": Car.bridge_def,
+	"car_offset": Vector3(7.5, 0.075, 0),
+	"car_rotation": PI / 2.0,
 })

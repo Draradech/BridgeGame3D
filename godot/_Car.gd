@@ -4,13 +4,13 @@ const  w = 2.0
 const  l = 4.0
 const ww = 1.5
 const wl = 2.5
-const wh = 0.9
+const wh = 0.3
 const bh = 0.5 + wh
 const rh = 0.8 + bh
 
 const wood = 0
 const steel = 1
-const spring = 2
+const car_spring = 2
 
 static var bridge_def = BridgeDefinition.new({
 	"nodes": [
@@ -22,15 +22,15 @@ static var bridge_def = BridgeDefinition.new({
 		[Vector3( w/2,  bh, -l/2), false,  100],
 		[Vector3(-w/2,  bh, -l/2), false,  100],
 		# 6 - roof
-		[Vector3( ww/2, rh,  wl/2), false, 200],
-		[Vector3(-ww/2, rh,  wl/2), false, 200],
-		[Vector3( ww/2, rh+.3, -wl/2), false, 000],
-		[Vector3(-ww/2, rh+.3, -wl/2), false, 000],
+		[Vector3( ww/2, rh,  wl/2), false, 100],
+		[Vector3(-ww/2, rh,  wl/2), false, 100],
+		[Vector3( ww/2, rh, -wl/2), false, 100],
+		[Vector3(-ww/2, rh, -wl/2), false, 100],
 		# 10 - wheels
-		[Vector3( ww/2, wh,  wl/2), true,  100],
-		[Vector3(-ww/2, wh,  wl/2), true,  100],
-		[Vector3( ww/2, wh+.1, -wl/2), true,  100],
-		[Vector3(-ww/2, wh+.1, -wl/2), true,  100],
+		[Vector3( ww/2, wh,  wl/2), false,  100, true],
+		[Vector3(-ww/2, wh,  wl/2), false,  100, true],
+		[Vector3( ww/2, wh, -wl/2), false,  100, true],
+		[Vector3(-ww/2, wh, -wl/2), false,  100, true],
 	],
 	"beams": [
 		# body
@@ -44,9 +44,9 @@ static var bridge_def = BridgeDefinition.new({
 		[5, 9, steel], [5, 8, steel], [4, 9, steel],
 		[4, 8, steel], [2, 8, steel], [2, 6, steel],
 		# wheels
-		[10, 1, steel], [10, 3, steel], [10, 6, spring], 
-		[11, 0, steel], [11, 2, steel], [11, 7, spring], 
-		[13, 2, steel], [13, 4, steel], [13, 9, spring], 
-		[12, 3, steel], [12, 5, steel], [12, 8, spring], 
+		[10, 1, steel], [10, 3, steel], [10, 6, car_spring], 
+		[11, 0, steel], [11, 2, steel], [11, 7, car_spring], 
+		[13, 2, steel], [13, 4, steel], [13, 9, car_spring], 
+		[12, 3, steel], [12, 5, steel], [12, 8, car_spring], 
 	],
 })

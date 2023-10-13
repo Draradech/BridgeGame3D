@@ -25,8 +25,6 @@ vertex_color_use_as_albedo = true
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_4g0yj"]
 material = SubResource("StandardMaterial3D_71dh3")
-top_radius = 0.05
-bottom_radius = 0.05
 height = 1.0
 radial_segments = 32
 rings = 8
@@ -43,10 +41,8 @@ vertex_color_use_as_albedo = true
 
 [sub_resource type="SphereMesh" id="SphereMesh_qukvq"]
 material = SubResource("StandardMaterial3D_uylmo")
-radius = 0.1
-height = 0.2
 radial_segments = 32
-rings = 8
+rings = 16
 
 [sub_resource type="MultiMesh" id="MultiMesh_es0pw"]
 transform_format = 1
@@ -54,7 +50,6 @@ use_colors = true
 mesh = SubResource("SphereMesh_qukvq")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i52e8"]
-cull_mode = 2
 vertex_color_use_as_albedo = true
 
 [node name="Main" type="Node"]

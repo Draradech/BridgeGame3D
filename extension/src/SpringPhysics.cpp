@@ -8,8 +8,9 @@ using namespace godot;
 void SpringPhysics::_bind_methods()
 {
     ClassDB::bind_method(D_METHOD("construct", "gravity", "velo_damping", "z_fix", "node_mass"), &SpringPhysics::construct);
-    ClassDB::bind_method(D_METHOD("addNode", "position", "fixed", "own_mass"), &SpringPhysics::addNode);
-    ClassDB::bind_method(D_METHOD("addBeam", "index_a", "index_b", "mass_per_m", "stiffness", "damping"), &SpringPhysics::addBeam);
+    ClassDB::bind_method(D_METHOD("add_node", "position", "fixed", "own_mass", "is_wheel"), &SpringPhysics::add_node);
+    ClassDB::bind_method(D_METHOD("add_beam", "index_a", "index_b", "mass_per_m", "stiffness", "damping", "material"), &SpringPhysics::add_beam);
+    ClassDB::bind_method(D_METHOD("add_road", "index_a", "index_b", "mass_per_m2"), &SpringPhysics::add_road);
     ClassDB::bind_method(D_METHOD("sim_step", "delta", "batching"), &SpringPhysics::sim_step);
     ClassDB::bind_method(D_METHOD("get_num_nodes"), &SpringPhysics::get_num_nodes);
     ClassDB::bind_method(D_METHOD("get_num_beams"), &SpringPhysics::get_num_beams);
@@ -33,6 +34,8 @@ SpringPhysics::~SpringPhysics()
 {
     delete[] nodes;
     delete[] beams;
+    delete[] wheels;
+    delete[] roads;
 }
 
 void SpringPhysics::construct(float gravity, float velo_damping, bool z_fix, float node_mass)
@@ -42,13 +45,17 @@ void SpringPhysics::construct(float gravity, float velo_damping, bool z_fix, flo
     this->z_fix = z_fix;
     this->node_mass = node_mass;
 
-    nodes = new PhysNode[200]();
-    beams = new PhysBeam[200]();
+    nodes = new PhysNode[2000]();
+    beams = new PhysBeam[2000]();
+    wheels = new PhysWheel[200]();
+    roads = new PhysRoad[200]();
     num_nodes = 0;
     num_beams = 0;
+    num_wheels = 0;
+    num_roads = 0;
 }
 
-void SpringPhysics::addNode(Vector3 position, bool fixed, float own_mass)
+void SpringPhysics::add_node(Vector3 position, bool fixed, float own_mass, bool is_wheel)
 {
     PhysNode* n = &nodes[num_nodes++];
     n->position.x = position.x;
@@ -57,9 +64,15 @@ void SpringPhysics::addNode(Vector3 position, bool fixed, float own_mass)
     n->velocity = V3D_ZERO;
     n->fixed = fixed;
     n->own_mass = own_mass + node_mass;
+    if (is_wheel)
+    {
+        PhysWheel* w = &wheels[num_wheels++];
+        w->node = n;
+        w->radius = 0.3f;
+    }
 }
 
-void SpringPhysics::addBeam(int index_a, int index_b, float mass_per_m, float stiffness, float damping)
+void SpringPhysics::add_beam(int index_a, int index_b, float mass_per_m, float stiffness, float damping, int material)
 {
     PhysBeam* b = &beams[num_beams++];
 
@@ -71,6 +84,41 @@ void SpringPhysics::addBeam(int index_a, int index_b, float mass_per_m, float st
     b->mass = mass_per_m * length;
     b->stiffness = stiffness / length;
     b->damping = damping / length;
+    b->material = material;
+    update_masses();
+}
+
+float heron(Vec3f pa, Vec3f pb, Vec3f pc)
+{
+    float a = distance(pb, pc);
+    float b = distance(pa, pc);
+    float c = distance(pa, pb);
+    float s = 0.5f * (a + b + c);
+    return sqrt(s * (s - a) * (s - b) * (s - c));
+}
+
+void distribute_mass(Vec3f p1, Vec3f p2, Vec3f p3, float mass_per_m2, Vec3f rnodes[4], float masses[4])
+{
+    Vec3f centroid = vdiv(vadd(vadd(p1, p2), p3), 3.0f);
+    float mass = heron(p1, p2, p3) * mass_per_m2;
+    float distances[4];
+    for (int i = 0; i < 4; ++i) distances[i] = distance(rnodes[i], centroid);
+    float divisor = 0.0f;
+    for (int i = 0; i < 4; ++i) divisor += distances[(i + 1) % 4] * distances[(i + 2) % 4] * distances[(i + 3) % 4];
+    for (int i = 0; i < 4; ++i) masses[i] += mass * distances[(i + 1) % 4] * distances[(i + 2) % 4] * distances[(i + 3) % 4] / divisor;
+}
+
+void SpringPhysics::add_road(int index_a, int index_b, float mass_per_m2)
+{
+    PhysRoad* r = &roads[num_roads++];
+
+    r->beam_a = &beams[index_a];
+    r->beam_b = &beams[index_b];
+    Vec3f rnodes[4] = {r->beam_a->node_a->position, r->beam_a->node_b->position, r->beam_b->node_b->position, r->beam_b->node_a->position};
+    float masses[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vec3f center = vmul(vadd(vadd(rnodes[0], rnodes[1]), vadd(rnodes[2], rnodes[3])), 0.25);
+    for (int i = 0; i < 4; ++i) distribute_mass(rnodes[i], rnodes[(i + 1) % 4], center, mass_per_m2, rnodes, masses); 
+    r->mass_aa = masses[0]; r->mass_ab = masses[1]; r->mass_bb = masses[2]; r->mass_ba = masses[3];
     update_masses();
 }
 
@@ -83,16 +131,24 @@ float rsqrt(float f)
 
 void SpringPhysics::update_masses()
 {
-    for(int i = num_nodes - 1; i >= 0; --i)
+    for (int i = num_nodes - 1; i >= 0; --i)
     {
         PhysNode* n = &nodes[i];
         n->mass = n->own_mass;
     }
-    for(int i = num_beams - 1; i >= 0; --i)
+    for (int i = num_beams - 1; i >= 0; --i)
     {
         PhysBeam* b = &beams[i];
         b->node_a->mass += b->mass * 0.5f;
         b->node_b->mass += b->mass * 0.5f;
+    }
+    for (int i = num_roads - 1; i >= 0; --i)
+    {
+        PhysRoad* r = &roads[i];
+        r->beam_a->node_a->mass += r->mass_aa;
+        r->beam_a->node_b->mass += r->mass_ab;
+        r->beam_b->node_a->mass += r->mass_ba;
+        r->beam_b->node_b->mass += r->mass_bb;
     }
 }
 
@@ -115,8 +171,7 @@ _FORCE_INLINE_ void SpringPhysics::update_forces()
         float velo_s = vdot(velo, direction);
         float spring_force = (b->target_length - length) * b->stiffness;
         float damp_force = velo_s * b->damping;
-        // if(is_cable)
-        if(length > 10.0f && spring_force > 0.0f)
+        if(b->material == CABLE)
         {
             spring_force = 0.0f;
             damp_force = 0.0f;
@@ -125,8 +180,7 @@ _FORCE_INLINE_ void SpringPhysics::update_forces()
         Vec3f force_vector_damp = vmul(direction, damp_force);
         b->node_a->force = vadd(b->node_a->force, force_vector_spring);
         b->node_b->force = vsub(b->node_b->force, force_vector_spring);
-        // if(is_spring)
-        if(b->stiffness < 1.0e6f)
+        if(b->material == SPRING)
         {
             b->node_a->force = vadd(b->node_a->force, force_vector_damp);
             b->node_b->force = vsub(b->node_b->force, force_vector_damp);
@@ -151,13 +205,6 @@ _FORCE_INLINE_ void SpringPhysics::integrate(float delta)
             n->velocity = vmul(n->velocity, velo_factor);
             n->position = vadd(n->position, vmul(n->velocity, delta));
         }
-        /* temp wheel stuff
-        if(n->fixed && n->position.y < 0.3f)
-        {
-            n->velocity.y = 0.0f;
-            n->position.y = 0.3f;
-        }
-        */
     }
 }
 
@@ -176,6 +223,15 @@ void SpringPhysics::sim_step(float delta, int batching)
                 n->force.z = 0.0f;
 			    n->velocity.z = 0.0f;
 			    n->position.z = 0.0f;
+            }
+        }
+        for(int i = num_wheels - 1; i >= 0; --i)
+        {
+            PhysWheel* w = &wheels[i];
+            if(w->node->position.y < w->radius)
+            {
+                w->node->velocity.y = 0.0f;
+                w->node->position.y = 0.3f;
             }
         }
     }
