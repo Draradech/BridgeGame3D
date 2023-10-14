@@ -60,10 +60,10 @@ func update_road_mesh():
 		var b2a = physics.get_beam_pos_a(def.roads[i][1])
 		var b2b = physics.get_beam_pos_b(def.roads[i][1])
 		var center = 0.25 * (b1a + b1b + b2a + b2b)
-		var b1a_up = 0.07 * (b1a - b1b).cross(b1a - b2a).normalized()
-		var b1b_up = 0.07 * (b1a - b1b).cross(b1b - b2b).normalized()
-		var b2a_up = 0.07 * (b2b - b2a).cross(b2a - b1a).normalized()
-		var b2b_up = 0.07 * (b2b - b2a).cross(b2b - b1b).normalized()
+		var b1a_up = 0.0 * (b1a - b1b).cross(b1a - b2a).normalized()
+		var b1b_up = 0.0 * (b1a - b1b).cross(b1b - b2b).normalized()
+		var b2a_up = 0.0 * (b2b - b2a).cross(b2a - b1a).normalized()
+		var b2b_up = 0.0 * (b2b - b2a).cross(b2b - b1b).normalized()
 		var center_up = 0.25 * (b1a_up + b1b_up + b2a_up + b2b_up)
 		var b1a_top = b1a + b1a_up
 		var b1b_top = b1b + b1b_up
@@ -74,18 +74,18 @@ func update_road_mesh():
 		road_mesh.surface_add_vertex(b1b_top)
 		road_mesh.surface_add_vertex(b1a_top)
 		road_mesh.surface_add_vertex(center_top)
-		road_mesh.surface_set_normal((b2a_top - b2b_top).cross(center_top - b2a_top))
-		road_mesh.surface_add_vertex(b2a_top)
-		road_mesh.surface_add_vertex(b2b_top)
-		road_mesh.surface_add_vertex(center_top)
-		road_mesh.surface_set_normal((b1a_top - b2a_top).cross(center_top - b1a_top))
-		road_mesh.surface_add_vertex(b1a_top)
-		road_mesh.surface_add_vertex(b2a_top)
-		road_mesh.surface_add_vertex(center_top)
-		road_mesh.surface_set_normal((b2b_top - b1b_top).cross(center_top - b1b_top))
-		road_mesh.surface_add_vertex(b2b_top)
-		road_mesh.surface_add_vertex(b1b_top)
-		road_mesh.surface_add_vertex(center_top)
+		#road_mesh.surface_set_normal((b2a_top - b2b_top).cross(center_top - b2a_top))
+		#road_mesh.surface_add_vertex(b2a_top)
+		#road_mesh.surface_add_vertex(b2b_top)
+		#road_mesh.surface_add_vertex(center_top)
+		#road_mesh.surface_set_normal((b1a_top - b2a_top).cross(center_top - b1a_top))
+		#road_mesh.surface_add_vertex(b1a_top)
+		#road_mesh.surface_add_vertex(b2a_top)
+		#road_mesh.surface_add_vertex(center_top)
+		#road_mesh.surface_set_normal((b2b_top - b1b_top).cross(center_top - b1b_top))
+		#road_mesh.surface_add_vertex(b2b_top)
+		#road_mesh.surface_add_vertex(b1b_top)
+		#road_mesh.surface_add_vertex(center_top)
 		var b1a_bottom = b1a - b1a_up
 		var b1b_bottom = b1b - b1b_up
 		var b2a_bottom = b2a - b2a_up
@@ -125,6 +125,8 @@ func update_mesh(node_mesh, beam_mesh):
 				node = def.car.nodes[i - def.nodes.size()]
 		if node and node.size() >= 4 and node[3]:
 			d = 0.6
+		if node and node[1]:
+			d = 0
 		t = t.scaled_local(d * Vector3.ONE)
 		t = t.translated(physics.get_node_position(i))
 		node_mesh.set_instance_transform(i, t)

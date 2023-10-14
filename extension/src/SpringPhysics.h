@@ -63,6 +63,7 @@ namespace godot
             void update_masses();
             void update_forces();
             void integrate(float delta);
+            void collide_wheels();
             int num_nodes;
             int num_beams;
             int num_wheels;

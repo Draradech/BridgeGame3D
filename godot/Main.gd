@@ -12,7 +12,7 @@ func _ready():
 	Engine.physics_ticks_per_second = (int)(physics_fps / multistep_at_1x)
 	Engine.max_physics_steps_per_frame = max(2, Engine.physics_ticks_per_second / min_render_fps)
 	update_simspeed()
-	set_scene(PerfTest.bridge_def)
+	set_scene(CollisionTest.bridge_def)
 	fps[2] = Time.get_ticks_usec()
 	ips[2] = Time.get_ticks_usec()
 	
@@ -99,5 +99,5 @@ func _unhandled_key_input(event):
 			set_scene(CableThing.bridge_def)
 		KEY_V:
 			set_scene(Car.bridge_def)
-		KEY_L:
-			print(bridge.physics.get_beam_force(24))
+		KEY_B:
+			set_scene(CollisionTest.bridge_def)

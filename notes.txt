@@ -20,3 +20,7 @@ wood road    60 kg/m^2                      50 kN sum (w = 3 l = 5)
 road strength???
 
 path planner: connect middle of road beams? connect waypoints directly?
+
+
+
+float area_abc = length(vcross(ab, ac)) * 0.5f;

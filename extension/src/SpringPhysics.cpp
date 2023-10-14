@@ -1,7 +1,6 @@
 #include "SpringPhysics.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
-#include <immintrin.h>
 
 using namespace godot;
 
@@ -97,36 +96,23 @@ float heron(Vec3f pa, Vec3f pb, Vec3f pc)
     return sqrt(s * (s - a) * (s - b) * (s - c));
 }
 
-void distribute_mass(Vec3f p1, Vec3f p2, Vec3f p3, float mass_per_m2, Vec3f rnodes[4], float masses[4])
-{
-    Vec3f centroid = vdiv(vadd(vadd(p1, p2), p3), 3.0f);
-    float mass = heron(p1, p2, p3) * mass_per_m2;
-    float distances[4];
-    for (int i = 0; i < 4; ++i) distances[i] = distance(rnodes[i], centroid);
-    float divisor = 0.0f;
-    for (int i = 0; i < 4; ++i) divisor += distances[(i + 1) % 4] * distances[(i + 2) % 4] * distances[(i + 3) % 4];
-    for (int i = 0; i < 4; ++i) masses[i] += mass * distances[(i + 1) % 4] * distances[(i + 2) % 4] * distances[(i + 3) % 4] / divisor;
-}
-
 void SpringPhysics::add_road(int index_a, int index_b, float mass_per_m2)
 {
     PhysRoad* r = &roads[num_roads++];
 
     r->beam_a = &beams[index_a];
     r->beam_b = &beams[index_b];
+    float masses[4];
+    float inv_d_sum = 0.0f;
+    float total_mass = 0.0f;
+    float inv_distances[4];
     Vec3f rnodes[4] = {r->beam_a->node_a->position, r->beam_a->node_b->position, r->beam_b->node_b->position, r->beam_b->node_a->position};
-    float masses[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     Vec3f center = vmul(vadd(vadd(rnodes[0], rnodes[1]), vadd(rnodes[2], rnodes[3])), 0.25);
-    for (int i = 0; i < 4; ++i) distribute_mass(rnodes[i], rnodes[(i + 1) % 4], center, mass_per_m2, rnodes, masses); 
+    for (int i = 0; i < 4; ++i) { inv_distances[i] = 1.0f / distance(rnodes[i], center); inv_d_sum += inv_distances[i]; }
+    for (int i = 0; i < 4; ++i) total_mass += heron(rnodes[i], rnodes[(i + 1) % 4], center) * mass_per_m2;
+    for (int i = 0; i < 4; ++i) masses[i] = total_mass * inv_distances[i] / inv_d_sum;
     r->mass_aa = masses[0]; r->mass_ab = masses[1]; r->mass_bb = masses[2]; r->mass_ba = masses[3];
     update_masses();
-}
-
-float rsqrt(float f)
-{
-    __m128 temp = _mm_set_ss(f);
-    temp = _mm_rsqrt_ss(temp);
-    return _mm_cvtss_f32(temp);
 }
 
 void SpringPhysics::update_masses()
@@ -166,20 +152,17 @@ _FORCE_INLINE_ void SpringPhysics::update_forces()
         float lsq = vdot(b_to_a, b_to_a);
         float rl = rsqrt(lsq);
         float length = lsq * rl;
-        Vec3f direction = vmul(b_to_a, rl);
-        Vec3f velo = vsub(b->node_b->velocity, b->node_a->velocity);
-        float velo_s = vdot(velo, direction);
         float spring_force = (b->target_length - length) * b->stiffness;
-        float damp_force = velo_s * b->damping;
-        if(b->material == CABLE)
-        {
-            spring_force = 0.0f;
-            damp_force = 0.0f;
-        }
+        if(b->material == CABLE && spring_force > 0.0f) continue; // no compression in cable
+        Vec3f direction = vmul(b_to_a, rl);
         Vec3f force_vector_spring = vmul(direction, spring_force);
-        Vec3f force_vector_damp = vmul(direction, damp_force);
         b->node_a->force = vadd(b->node_a->force, force_vector_spring);
         b->node_b->force = vsub(b->node_b->force, force_vector_spring);
+
+        Vec3f velo = vsub(b->node_b->velocity, b->node_a->velocity);
+        float velo_s = vdot(velo, direction);
+        float damp_force = velo_s * b->damping;
+        Vec3f force_vector_damp = vmul(direction, damp_force);
         if(b->material == SPRING)
         {
             b->node_a->force = vadd(b->node_a->force, force_vector_damp);
@@ -225,14 +208,95 @@ void SpringPhysics::sim_step(float delta, int batching)
 			    n->position.z = 0.0f;
             }
         }
-        for(int i = num_wheels - 1; i >= 0; --i)
+        collide_wheels();
+    }
+}
+
+bool is_point_in_triangle(Vec3f a, Vec3f b, Vec3f c, Vec3f p)
+{
+    Vec3f bary = barycentric(a, b, c, p);
+    return (bary.x >= 0.0f && bary.y >= 0.0f && bary.z >= 0.0f && bary.x <= 1.0f && bary.y <= 1.0f && bary.z <= 1.0f);
+}
+
+Vec3f closest_point_on_edge(Vec3f a, Vec3f b)
+{
+    Vec3f v = vsub(b, a);
+    float t = vdot(vsub(V3D_ZERO, a), v) / vdot(v, v);
+    t = CLAMP(t, 0.0f, 1.0f);
+    Vec3f ret = vadd(a, vmul(v, t));
+    return ret;
+}
+
+Vec3f closest_point_on_triangle_edge(Vec3f a, Vec3f b, Vec3f c)
+{
+    Vec3f qab = closest_point_on_edge(a, b);
+    float dab = length(qab);
+    Vec3f qac = closest_point_on_edge(a, c);
+    float dac = length(qac);
+    Vec3f qbc = closest_point_on_edge(b, c);
+    float dbc = length(qbc);
+    if (dab <= dac && dab <= dbc) return qab;
+    if (dac <= dbc) return qac;
+    return qbc;
+}
+
+bool sphere_triangle_collision(Vec3f a, Vec3f b, Vec3f c, Vec3f p, float r, Vec3f& normal, float& depth)
+{
+    // Translate problem so sphere is centered at origin
+    a = vsub(a, p);
+    b = vsub(b, p);
+    c = vsub(c, p);
+    // Compute a vector normal to triangle plane and normalize it
+    normal = normalize(vcross(vsub(b, a), vsub(c, a)));
+    // Compute distance d of sphere center to triangle plane
+    float d = vdot(a, normal);
+    float ad = abs(d);
+    // Early out if too far from plane
+    if (ad > r) return false;
+    Vec3f projection = vmul(normal, d);
+    if (is_point_in_triangle(a, b, c, projection))
+    {
+        depth = r - ad;
+        return true;
+    }
+    Vec3f on_edge = closest_point_on_triangle_edge(a, b, c);
+    ad = length(on_edge);
+    // too far from edge
+    if (ad > r) return false;
+    depth = r - ad;
+    normal = vsub(V3D_ZERO, normalize(on_edge));
+    return true;
+}
+
+void SpringPhysics::collide_wheels()
+{
+    for (int i = num_wheels - 1; i >= 0; --i)
+    {
+        PhysWheel* w = &wheels[i];
+        int num_collisions = 0;
+        Vec3f normal;
+        float depth;
+        for (int j = num_roads - 1; j >= 0; --j)
         {
-            PhysWheel* w = &wheels[i];
-            if(w->node->position.y < w->radius)
+            PhysRoad* r = &roads[j];
+            Vec3f rnodes[4] = {r->beam_a->node_a->position, r->beam_a->node_b->position, r->beam_b->node_b->position, r->beam_b->node_a->position};
+            Vec3f center = vmul(vadd(vadd(rnodes[0], rnodes[1]), vadd(rnodes[2], rnodes[3])), 0.25);
+            for (int i = 0; i < 1; ++i)
             {
-                w->node->velocity.y = 0.0f;
-                w->node->position.y = 0.3f;
+                Vec3f resolution;
+                if (sphere_triangle_collision(rnodes[i], rnodes[(i + 1) % 4], center, w->node->position, w->radius, normal, depth))
+                {
+                    num_collisions++;
+                    //sum_resolution = vadd(sum_resolution, resolution);
+                }
             }
+        }
+        if (num_collisions)
+        {
+            Vec3f resolution = vmul(normal, depth);
+            Vec3f resolution_velo = vmul(normal, vdot(w->node->velocity, normal));
+            w->node->position = vadd(w->node->position, resolution);
+            w->node->velocity = vsub(w->node->velocity, resolution_velo);
         }
     }
 }
