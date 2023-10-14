@@ -79,7 +79,6 @@ visible = false
 mesh = SubResource("BoxMesh_lhuwr")
 
 [node name="MultiMeshBeams" type="MultiMeshInstance3D" parent="."]
-visible = false
 multimesh = SubResource("MultiMesh_jl5hn")
 
 [node name="MultiMeshNodes" type="MultiMeshInstance3D" parent="."]

@@ -67,7 +67,7 @@ void SpringPhysics::add_node(Vector3 position, bool fixed, float own_mass, bool 
     {
         PhysWheel* w = &wheels[num_wheels++];
         w->node = n;
-        w->radius = 0.3f;
+        w->radius = 0.375f;
     }
 }
 
@@ -256,6 +256,7 @@ bool sphere_triangle_collision(Vec3f a, Vec3f b, Vec3f c, Vec3f p, float r, Vec3
     Vec3f projection = vmul(normal, d);
     if (is_point_in_triangle(a, b, c, projection))
     {
+        if (ad - d < 0.01) normal = vsub(V3D_ZERO, normal);
         depth = r - ad;
         return true;
     }
@@ -274,29 +275,29 @@ void SpringPhysics::collide_wheels()
     {
         PhysWheel* w = &wheels[i];
         int num_collisions = 0;
-        Vec3f normal;
-        float depth;
+        Vec3f pos_corection = V3D_ZERO;
+        Vec3f velo_correction = V3D_ZERO;
         for (int j = num_roads - 1; j >= 0; --j)
         {
             PhysRoad* r = &roads[j];
             Vec3f rnodes[4] = {r->beam_a->node_a->position, r->beam_a->node_b->position, r->beam_b->node_b->position, r->beam_b->node_a->position};
             Vec3f center = vmul(vadd(vadd(rnodes[0], rnodes[1]), vadd(rnodes[2], rnodes[3])), 0.25);
-            for (int i = 0; i < 1; ++i)
+            for (int i = 0; i < 4; ++i)
             {
-                Vec3f resolution;
+                Vec3f normal;
+                float depth;
                 if (sphere_triangle_collision(rnodes[i], rnodes[(i + 1) % 4], center, w->node->position, w->radius, normal, depth))
                 {
                     num_collisions++;
-                    //sum_resolution = vadd(sum_resolution, resolution);
+                    pos_corection = vadd(pos_corection, vmul(normal, depth));
+                    velo_correction = vadd(velo_correction, vmul(normal, vdot(w->node->velocity, normal)));
                 }
             }
         }
         if (num_collisions)
         {
-            Vec3f resolution = vmul(normal, depth);
-            Vec3f resolution_velo = vmul(normal, vdot(w->node->velocity, normal));
-            w->node->position = vadd(w->node->position, resolution);
-            w->node->velocity = vsub(w->node->velocity, resolution_velo);
+            w->node->position = vadd(w->node->position, vdiv(pos_corection, num_collisions));
+            w->node->velocity = vsub(w->node->velocity, vdiv(velo_correction, num_collisions));
         }
     }
 }
